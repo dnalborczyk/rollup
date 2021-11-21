@@ -239,7 +239,11 @@ export class ModuleLoader {
 		);
 	}
 
-	private async addModuleSource(id: string, importer: string | undefined, module: Module) {
+	private async addModuleSource(
+		id: string,
+		importer: string | undefined,
+		module: Module
+	): Promise<void> {
 		timeStart('load modules', 3);
 		let source: string | SourceDescription;
 		try {
@@ -379,7 +383,7 @@ export class ModuleLoader {
 		resolveStaticDependencyPromises: ResolveStaticDependencyPromise[],
 		resolveDynamicDependencyPromises: ResolveDynamicDependencyPromise[],
 		loadAndResolveDependenciesPromise: Promise<void>
-	) {
+	): Promise<void> {
 		if (this.modulesWithLoadedDependencies.has(module)) {
 			return;
 		}
@@ -526,7 +530,11 @@ export class ModuleLoader {
 		);
 	}
 
-	private async handleExistingModule(module: Module, isEntry: boolean, isPreload: boolean) {
+	private async handleExistingModule(
+		module: Module,
+		isEntry: boolean,
+		isPreload: boolean
+	): Promise<void | LoadModulePromise> {
 		const loadPromise = this.moduleLoadPromises.get(module)!;
 		if (isPreload) {
 			return loadPromise;
@@ -665,7 +673,7 @@ function addChunkNamesToModule(
 	module: Module,
 	{ fileName, name }: UnresolvedModule,
 	isUserDefined: boolean
-) {
+): void {
 	if (fileName !== null) {
 		module.chunkFileNames.add(fileName);
 	} else if (name !== null) {
@@ -682,7 +690,7 @@ function isNotAbsoluteExternal(
 	id: string,
 	source: string,
 	makeAbsoluteExternalsRelative: boolean | 'ifRelativeSource'
-) {
+): boolean {
 	return (
 		makeAbsoluteExternalsRelative === true ||
 		(makeAbsoluteExternalsRelative === 'ifRelativeSource' && isRelative(source)) ||
