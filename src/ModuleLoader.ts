@@ -83,7 +83,7 @@ export class ModuleLoader {
 		this.readQueue.maxParallel = options.maxParallelFileReads;
 	}
 
-	async addAdditionalModules(unresolvedModules: string[]): Promise<Module[]> {
+	async addAdditionalModules(unresolvedModules: readonly string[]): Promise<Module[]> {
 		const result = this.extendLoadModulesPromise(
 			Promise.all(unresolvedModules.map(id => this.loadEntryModule(id, false, undefined, null)))
 		);
@@ -92,7 +92,7 @@ export class ModuleLoader {
 	}
 
 	async addEntryModules(
-		unresolvedEntryModules: UnresolvedModule[],
+		unresolvedEntryModules: readonly UnresolvedModule[],
 		isUserDefined: boolean
 	): Promise<{
 		entryModules: Module[];
@@ -161,13 +161,13 @@ export class ModuleLoader {
 	}
 
 	async preloadModule(resolvedId: NormalizedResolveIdWithoutDefaults): Promise<ModuleInfo> {
-		const module = await this.fetchModule(
+		const { info } = await this.fetchModule(
 			this.addDefaultsToResolvedId(resolvedId)!,
 			undefined,
 			false,
 			true
 		);
-		return module.info;
+		return info;
 	}
 
 	resolveId = async (
