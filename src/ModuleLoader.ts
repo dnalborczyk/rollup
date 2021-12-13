@@ -571,10 +571,8 @@ export class ModuleLoader {
 				moduleSideEffects: this.hasModuleSideEffects(source, true),
 				syntheticNamedExports: false
 			};
-		} else {
-			if (resolvedId.external && resolvedId.syntheticNamedExports) {
-				this.options.onwarn(errExternalSyntheticExports(source, importer));
-			}
+		} else if (resolvedId.external && resolvedId.syntheticNamedExports) {
+			this.options.onwarn(errExternalSyntheticExports(source, importer));
 		}
 		return resolvedId;
 	}
