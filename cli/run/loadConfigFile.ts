@@ -12,7 +12,7 @@ import { stderr } from '../logging';
 import batchWarnings, { BatchWarnings } from './batchWarnings';
 import { addCommandPluginsToInputOptions, addPluginsFromCommandOption } from './commandPlugins';
 
-function supportsNativeESM() {
+function supportsNativeESM(): boolean {
 	return Number(/^v(\d+)/.exec(process.version)![1]) >= 13;
 }
 
@@ -57,7 +57,7 @@ async function loadConfigFile(
 	return getConfigList(configFileExport, commandOptions);
 }
 
-function getDefaultFromCjs(namespace: GenericConfigObject) {
+function getDefaultFromCjs(namespace: GenericConfigObject): unknown {
 	return namespace.__esModule ? namespace.default : namespace;
 }
 

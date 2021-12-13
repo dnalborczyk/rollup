@@ -136,7 +136,7 @@ function applyOptionHook(watchMode: boolean) {
 	};
 }
 
-function normalizePlugins(plugins: Plugin[], anonymousPrefix: string): void {
+function normalizePlugins(plugins: readonly Plugin[], anonymousPrefix: string): void {
 	for (let pluginIndex = 0; pluginIndex < plugins.length; pluginIndex++) {
 		const plugin = plugins[pluginIndex];
 		if (!plugin.name) {
