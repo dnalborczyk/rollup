@@ -1362,7 +1362,6 @@ describe('rollup.watch', () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
 					// sometimes the watcher is triggered during the initial run
 					watchChangeIds.clear();
-
 					await Promise.all(watchFiles.map(file_2 => promises.writeFile(file_2, 'changed')));
 				},
 				'START',

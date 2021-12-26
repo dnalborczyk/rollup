@@ -1,6 +1,6 @@
 /* global gc */
 
-const { readFileSync, writeFileSync } = require('fs');
+const { promises } = require('fs');
 const path = require('path');
 const colorette = require('colorette');
 const prettyBytes = require('pretty-bytes');
@@ -89,7 +89,7 @@ async function calculatePrintAndPersistTimings(config, existingTimings) {
 	}
 	const averageTimings = getAverage(timings, numberOfRunsToAverage, numberOfDiscardedResults);
 	printMeasurements(averageTimings, existingTimings);
-	if (Object.keys(existingTimings).length === 0) persistTimings(averageTimings);
+	if (Object.keys(existingTimings).length === 0) await persistTimings(averageTimings);
 }
 
 async function buildAndGetTimings(config) {
@@ -135,9 +135,9 @@ function clearLines(numberOfLines) {
 	console.info('\33[A' + '\33[2K\33[A'.repeat(numberOfLines));
 }
 
-function getExistingTimings() {
+async function getExistingTimings() {
 	try {
-		const timings = JSON.parse(readFileSync(perfFile, 'utf8'));
+		const timings = JSON.parse(await promises.readFile(perfFile, 'utf8'));
 		console.info(
 			colorette.bold(
 				`Comparing with ${colorette.cyan(perfFile)}. Delete this file to create a new base line.`
@@ -149,9 +149,9 @@ function getExistingTimings() {
 	}
 }
 
-function persistTimings(timings) {
+async function persistTimings(timings) {
 	try {
-		writeFileSync(perfFile, JSON.stringify(timings, null, 2), 'utf8');
+		await promises.writeFile(perfFile, JSON.stringify(timings, null, 2), 'utf8');
 		console.info(
 			colorette.bold(
 				`Saving performance information to new reference file ${colorette.cyan(perfFile)}.`
@@ -198,6 +198,10 @@ function getFormattedMemory(currentMemory, persistedMemory = currentMemory) {
 	return color(formattedMemory);
 }
 
-loadPerfConfig().then(async config =>
-	calculatePrintAndPersistTimings(config, await getExistingTimings())
-);
+async function start() {
+	const config = await loadPerfConfig();
+	const timings = await getExistingTimings();
+	await calculatePrintAndPersistTimings(config, timings);
+}
+
+start();
