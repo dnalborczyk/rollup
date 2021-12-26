@@ -1,15 +1,8 @@
 const assert = require('assert');
-const {
-	existsSync,
-	promises,
-	readdirSync,
-	readFileSync,
-	unlinkSync,
-	writeFileSync
-} = require('fs');
+const { promises } = require('fs');
 const { resolve } = require('path');
 const process = require('process');
-const { copy, removeSync } = require('fs-extra');
+const { copy, pathExists, remove } = require('fs-extra');
 const sander = require('sander');
 const rollup = require('../../dist/rollup');
 
@@ -24,9 +17,9 @@ function wait(ms) {
 describe('rollup.watch', () => {
 	let watcher;
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		process.chdir(cwd);
-		return removeSync('test/_tmp');
+		await remove('test/_tmp');
 	});
 
 	afterEach(() => {
@@ -96,7 +89,7 @@ describe('rollup.watch', () => {
 					if (triggerRestart) {
 						triggerRestart = false;
 						await wait(100);
-						writeFileSync('test/_tmp/input/main.js', 'export default 44;');
+						await promises.writeFile('test/_tmp/input/main.js', 'export default 44;');
 						await wait(100);
 						return code;
 					}
@@ -113,10 +106,10 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
 				triggerRestart = true;
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -159,9 +152,9 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				writeFileSync(
+				await promises.writeFile(
 					'test/_tmp/input/main.js',
 					"import {value} from 'virtual';\nexport default value + 1;"
 				);
@@ -200,28 +193,28 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				watchChangeCnt = 0;
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 43);
 				assert.strictEqual(watchChangeCnt, 1);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 43);
 				assert.strictEqual(watchChangeCnt, 2);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -268,31 +261,31 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
 				assert.deepStrictEqual(events, []);
 				assert.deepStrictEqual(ids, expectedIds);
-				writeFileSync(WATCHED_ID, 'first');
+				await promises.writeFile(WATCHED_ID, 'first');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
 				assert.deepStrictEqual(events, ['create']);
 				assert.deepStrictEqual(ids, expectedIds);
-				writeFileSync(WATCHED_ID, 'first');
+				await promises.writeFile(WATCHED_ID, 'first');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
 				assert.deepStrictEqual(events, ['create', 'update']);
 				assert.deepStrictEqual(ids, expectedIds);
-				unlinkSync(WATCHED_ID);
+				await promises.unlink(WATCHED_ID);
 			},
 			'START',
 			'BUNDLE_START',
@@ -345,9 +338,9 @@ describe('rollup.watch', () => {
 			'END',
 			async () => {
 				assert.strictEqual(lastEvent, null);
-				writeFileSync(WATCHED_ID, 'another');
+				await promises.writeFile(WATCHED_ID, 'another');
 				await wait(100);
-				unlinkSync(WATCHED_ID);
+				await promises.unlink(WATCHED_ID);
 			},
 			'START',
 			'BUNDLE_START',
@@ -356,11 +349,11 @@ describe('rollup.watch', () => {
 			async () => {
 				assert.strictEqual(lastEvent, 'delete');
 				lastEvent = null;
-				writeFileSync(WATCHED_ID, '123');
+				await promises.writeFile(WATCHED_ID, '123');
 				await wait(100);
-				unlinkSync(WATCHED_ID);
+				await promises.unlink(WATCHED_ID);
 				// To ensure there is always another change to trigger a rebuild
-				writeFileSync(MAIN_ID, 'export default 43;');
+				await promises.writeFile(MAIN_ID, 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -368,9 +361,9 @@ describe('rollup.watch', () => {
 			'END',
 			async () => {
 				assert.strictEqual(lastEvent, null);
-				writeFileSync(WATCHED_ID, '123');
+				await promises.writeFile(WATCHED_ID, '123');
 				await wait(100);
-				writeFileSync(WATCHED_ID, 'asd');
+				await promises.writeFile(WATCHED_ID, 'asd');
 			},
 			'START',
 			'BUNDLE_START',
@@ -447,10 +440,10 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/main1.js'), 21);
 				assert.strictEqual(run('../_tmp/output/main2.js'), 42);
-				writeFileSync('test/_tmp/input/shared.js', 'export const value = 22;');
+				await promises.writeFile('test/_tmp/input/shared.js', 'export const value = 22;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -481,10 +474,10 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/_main_1.js'), 21);
 				assert.strictEqual(run('../_tmp/output/subfolder/_main_2.js'), 42);
-				writeFileSync('test/_tmp/input/shared.js', 'export const value = 22;');
+				await promises.writeFile('test/_tmp/input/shared.js', 'export const value = 22;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -512,15 +505,15 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				writeFileSync('test/_tmp/input/main.js', 'export nope;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export nope;');
 			},
 			'START',
 			'BUNDLE_START',
 			'ERROR',
-			() => {
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+			async () => {
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -546,9 +539,9 @@ describe('rollup.watch', () => {
 			'START',
 			'BUNDLE_START',
 			'ERROR',
-			() => {
-				assert.strictEqual(existsSync('../_tmp/output/bundle.js'), false);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+			async () => {
+				assert.strictEqual(await pathExists('../_tmp/output/bundle.js'), false);
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -582,9 +575,9 @@ describe('rollup.watch', () => {
 			'START',
 			'BUNDLE_START',
 			'ERROR',
-			() => {
-				assert.strictEqual(existsSync('../_tmp/output/bundle.js'), false);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+			async () => {
+				assert.strictEqual(await pathExists('../_tmp/output/bundle.js'), false);
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -611,17 +604,17 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				unlinkSync('test/_tmp/input/main.js');
-				writeFileSync('test/_tmp/input/main.js', 'export nope;');
+				await promises.unlink('test/_tmp/input/main.js');
+				await promises.writeFile('test/_tmp/input/main.js', 'export nope;');
 			},
 			'START',
 			'BUNDLE_START',
 			'ERROR',
-			() => {
-				unlinkSync('test/_tmp/input/main.js');
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+			async () => {
+				await promises.unlink('test/_tmp/input/main.js');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -648,17 +641,17 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 43);
-				unlinkSync('test/_tmp/input/dep.js');
-				writeFileSync('test/_tmp/input/dep.js', 'export nope;');
+				await promises.unlink('test/_tmp/input/dep.js');
+				await promises.writeFile('test/_tmp/input/dep.js', 'export nope;');
 			},
 			'START',
 			'BUNDLE_START',
 			'ERROR',
-			() => {
-				unlinkSync('test/_tmp/input/dep.js');
-				writeFileSync('test/_tmp/input/dep.js', 'export const value = 43;');
+			async () => {
+				await promises.unlink('test/_tmp/input/dep.js');
+				await promises.writeFile('test/_tmp/input/dep.js', 'export const value = 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -690,9 +683,10 @@ describe('rollup.watch', () => {
 		return sequence(watcher, [
 			'START',
 			'BUNDLE_START',
-			() => {
-				writeFileSync('test/_tmp/input/main.js', 'export default 44;');
-				return wait(400).then(() => assert.deepStrictEqual(events, ['START', 'BUNDLE_START']));
+			async () => {
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 44;');
+				await wait(400);
+				assert.deepStrictEqual(events, ['START', 'BUNDLE_START']);
 			}
 		]);
 	});
@@ -717,9 +711,10 @@ describe('rollup.watch', () => {
 		return sequence(watcher, [
 			'START',
 			'BUNDLE_START',
-			() => {
-				writeFileSync('test/_tmp/input/main.js', 'export default 44;');
-				return wait(400).then(() => assert.deepStrictEqual(events, ['START', 'BUNDLE_START']));
+			async () => {
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 44;');
+				await wait(400);
+				assert.deepStrictEqual(events, ['START', 'BUNDLE_START']);
 			}
 		]);
 	});
@@ -739,22 +734,23 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 43);
-				writeFileSync('test/_tmp/input/main.js', 'export default 42;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 42;');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
 				let unexpectedEvent = false;
 				watcher.once('event', event => {
 					unexpectedEvent = event;
 				});
-				writeFileSync('test/_tmp/input/dep.js', '= invalid');
-				return wait(400).then(() => assert.strictEqual(unexpectedEvent, false));
+				await promises.writeFile('test/_tmp/input/dep.js', '= invalid');
+				await wait(400);
+				assert.strictEqual(unexpectedEvent, false);
 			}
 		]);
 	});
@@ -774,16 +770,16 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				writeFileSync('test/_tmp/input/main.js', `import '../output/bundle.js'`);
+				await promises.writeFile('test/_tmp/input/main.js', `import '../output/bundle.js'`);
 			},
 			'START',
 			'BUNDLE_START',
 			'ERROR',
-			event => {
+			async event => {
 				assert.strictEqual(event.error.message, 'Cannot import the generated bundle');
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
@@ -813,18 +809,18 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
 					foo: 'foo-1',
 					bar: 'bar-1'
 				});
-				writeFileSync('test/_tmp/input/foo.js', `export default 'foo-2';`);
+				await promises.writeFile('test/_tmp/input/foo.js', `export default 'foo-2';`);
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
 					foo: 'foo-2',
 					bar: 'bar-1'
@@ -833,14 +829,13 @@ describe('rollup.watch', () => {
 				watcher.once('event', event => {
 					unexpectedEvent = event;
 				});
-				writeFileSync('test/_tmp/input/bar.js', "export default 'bar-2';");
-				return wait(400).then(() => {
-					assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
-						foo: 'foo-2',
-						bar: 'bar-1'
-					});
-					assert.strictEqual(unexpectedEvent, false);
+				await promises.writeFile('test/_tmp/input/bar.js', "export default 'bar-2';");
+				await wait(400);
+				assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
+					foo: 'foo-2',
+					bar: 'bar-1'
 				});
+				assert.strictEqual(unexpectedEvent, false);
 			}
 		]);
 	});
@@ -863,18 +858,18 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
 					foo: 'foo-1',
 					bar: 'bar-1'
 				});
-				writeFileSync('test/_tmp/input/foo.js', `export default 'foo-2';`);
+				await promises.writeFile('test/_tmp/input/foo.js', `export default 'foo-2';`);
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
 					foo: 'foo-2',
 					bar: 'bar-1'
@@ -883,14 +878,13 @@ describe('rollup.watch', () => {
 				watcher.once('event', event => {
 					unexpectedEvent = event;
 				});
-				writeFileSync('test/_tmp/input/bar.js', "export default 'bar-2';");
-				return wait(400).then(() => {
-					assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
-						foo: 'foo-2',
-						bar: 'bar-1'
-					});
-					assert.strictEqual(unexpectedEvent, false);
+				await promises.writeFile('test/_tmp/input/bar.js', "export default 'bar-2';");
+				await wait(400);
+				assert.deepStrictEqual(run('../_tmp/output/bundle.js'), {
+					foo: 'foo-2',
+					bar: 'bar-1'
 				});
+				assert.strictEqual(unexpectedEvent, false);
 			}
 		]);
 	});
@@ -923,10 +917,10 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.deepStrictEqual(run('../_tmp/output/bundle1.js'), 42);
 				assert.deepStrictEqual(run('../_tmp/output/bundle2.js'), 43);
-				writeFileSync('test/_tmp/input/main2.js', 'export default 44');
+				await promises.writeFile('test/_tmp/input/main2.js', 'export default 44');
 			},
 			'START',
 			'BUNDLE_START',
@@ -966,9 +960,12 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
-				assert.strictEqual(existsSync(resolve(__dirname, '../_tmp/output/bundle1.js')), false);
-				assert.strictEqual(existsSync(resolve(__dirname, '../_tmp/output/bundle2.js')), true);
+			async () => {
+				assert.strictEqual(
+					await pathExists(resolve(__dirname, '../_tmp/output/bundle1.js')),
+					false
+				);
+				assert.strictEqual(await pathExists(resolve(__dirname, '../_tmp/output/bundle2.js')), true);
 				assert.deepStrictEqual(run('../_tmp/output/bundle2.js'), 43);
 			}
 		]);
@@ -992,8 +989,8 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
-				const generated = readFileSync('test/_tmp/output/bundle.js', 'utf8');
+			async () => {
+				const generated = await promises.readFile('test/_tmp/output/bundle.js', 'utf8');
 				assert.ok(/jQuery/.test(generated));
 			}
 		]);
@@ -1014,9 +1011,9 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				writeFileSync('test/_tmp/input/[foo]/bar.js', `export const bar = 43;`);
+				await promises.writeFile('test/_tmp/input/[foo]/bar.js', `export const bar = 43;`);
 			},
 			'START',
 			'BUNDLE_START',
@@ -1048,12 +1045,12 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
-				[dynamicName, staticName, chunkName] = readdirSync('test/_tmp/output').sort();
-				removeSync('test/_tmp/output');
+			async () => {
+				[dynamicName, staticName, chunkName] = (await promises.readdir('test/_tmp/output')).sort();
+				await remove('test/_tmp/output');
 
 				// this should only update the hash of that particular entry point
-				writeFileSync(
+				await promises.writeFile(
 					'test/_tmp/input/main-static.js',
 					"import {value} from './shared';\nexport default 2 * value;"
 				);
@@ -1062,25 +1059,27 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
-				const [newDynamicName, newStaticName, newChunkName] =
-					readdirSync('test/_tmp/output').sort();
-				removeSync('test/_tmp/output');
+			async () => {
+				const [newDynamicName, newStaticName, newChunkName] = (
+					await promises.readdir('test/_tmp/output')
+				).sort();
+				await remove('test/_tmp/output');
 				assert.notEqual(newStaticName, staticName);
 				assert.strictEqual(newDynamicName, dynamicName);
 				assert.strictEqual(newChunkName, chunkName);
 				staticName = newStaticName;
 
 				// this should update all hashes
-				writeFileSync('test/_tmp/input/shared.js', 'export const value = 42;');
+				await promises.writeFile('test/_tmp/input/shared.js', 'export const value = 42;');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
-				const [newDynamicName_1, newStaticName_1, newChunkName_1] =
-					readdirSync('test/_tmp/output').sort();
+			async () => {
+				const [newDynamicName_1, newStaticName_1, newChunkName_1] = (
+					await promises.readdir('test/_tmp/output')
+				).sort();
 				assert.notEqual(newStaticName_1, staticName);
 				assert.notEqual(newDynamicName_1, dynamicName);
 				assert.notEqual(newChunkName_1, chunkName);
@@ -1165,35 +1164,35 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				watchChangeCnt = 0;
-				assert.strictEqual(existsSync('../_tmp/output/bundle.js'), false);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				assert.strictEqual(await pathExists('../_tmp/output/bundle.js'), false);
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
-				assert.strictEqual(existsSync('../_tmp/output/bundle.js'), false);
+			async () => {
+				assert.strictEqual(await pathExists('../_tmp/output/bundle.js'), false);
 				assert.strictEqual(watchChangeCnt, 1);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
-				assert.strictEqual(existsSync('../_tmp/output/bundle.js'), false);
+			async () => {
+				assert.strictEqual(await pathExists('../_tmp/output/bundle.js'), false);
 				assert.strictEqual(watchChangeCnt, 2);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 			},
 			'START',
 			'BUNDLE_START',
 			'BUNDLE_END',
 			// 'END',
-			evt => {
-				assert.strictEqual(existsSync('../_tmp/output/bundle.js'), false);
+			async evt => {
+				assert.strictEqual(await pathExists('../_tmp/output/bundle.js'), false);
 				assert.strictEqual(watchChangeCnt, 3);
 				// still aware of its output destination
 				assert.strictEqual(evt.output[0], resolve('test/_tmp/output/bundle.js'));
@@ -1220,9 +1219,9 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-					writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+					await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 					startTime = process.hrtime();
 				},
 				'START',
@@ -1294,9 +1293,9 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				writeFileSync('test/_tmp/input/main.js', 'export default 43;');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default 43;');
 				startTime = process.hrtime();
 			},
 			'START',
@@ -1318,62 +1317,64 @@ describe('rollup.watch', () => {
 	});
 
 	describe('addWatchFile', () => {
-		it('supports adding additional watch files in plugin hooks', () => {
+		it('supports adding additional watch files in plugin hooks', async () => {
 			const watchChangeIds = new Set();
 			const buildStartFile = resolve('test/_tmp/input/buildStart');
 			const loadFile = resolve('test/_tmp/input/load');
 			const resolveIdFile = resolve('test/_tmp/input/resolveId');
 			const transformFile = resolve('test/_tmp/input/transform');
 			const watchFiles = [buildStartFile, loadFile, resolveIdFile, transformFile];
-			return copy('test/watch/samples/basic', 'test/_tmp/input').then(() => {
-				for (const file of watchFiles) writeFileSync(file, 'initial');
-				watcher = rollup.watch({
-					input: 'test/_tmp/input/main.js',
-					output: {
-						file: 'test/_tmp/output/bundle.js',
-						format: 'cjs',
-						exports: 'auto'
+			await copy('test/watch/samples/basic', 'test/_tmp/input');
+			for (const file of watchFiles) {
+				await promises.writeFile(file, 'initial');
+			}
+			watcher = rollup.watch({
+				input: 'test/_tmp/input/main.js',
+				output: {
+					file: 'test/_tmp/output/bundle.js',
+					format: 'cjs',
+					exports: 'auto'
+				},
+				plugins: {
+					buildStart() {
+						this.addWatchFile(buildStartFile);
 					},
-					plugins: {
-						buildStart() {
-							this.addWatchFile(buildStartFile);
-						},
-						load() {
-							this.addWatchFile(loadFile);
-						},
-						resolveId() {
-							this.addWatchFile(resolveIdFile);
-						},
-						transform() {
-							this.addWatchFile(transformFile);
-						},
-						watchChange(id) {
-							watchChangeIds.add(id);
-						}
-					}
-				});
-
-				return sequence(watcher, [
-					'START',
-					'BUNDLE_START',
-					'BUNDLE_END',
-					'END',
-					() => {
-						assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-						// sometimes the watcher is triggered during the initial run
-						watchChangeIds.clear();
-						for (const file of watchFiles) writeFileSync(file, 'changed');
+					load() {
+						this.addWatchFile(loadFile);
 					},
-					'START',
-					'BUNDLE_START',
-					'BUNDLE_END',
-					'END',
-					() => {
-						assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-						assert.deepStrictEqual([...watchChangeIds].sort(), watchFiles.sort());
+					resolveId() {
+						this.addWatchFile(resolveIdFile);
+					},
+					transform() {
+						this.addWatchFile(transformFile);
+					},
+					watchChange(id) {
+						watchChangeIds.add(id);
 					}
-				]);
+				}
 			});
+			return sequence(watcher, [
+				'START',
+				'BUNDLE_START',
+				'BUNDLE_END',
+				'END',
+				async () => {
+					assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
+					// sometimes the watcher is triggered during the initial run
+					watchChangeIds.clear();
+					for (const file_2 of watchFiles) {
+						await promises.writeFile(file_2, 'changed');
+					}
+				},
+				'START',
+				'BUNDLE_START',
+				'BUNDLE_END',
+				'END',
+				() => {
+					assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
+					assert.deepStrictEqual([...watchChangeIds].sort(), watchFiles.sort());
+				}
+			]);
 		});
 
 		it('respects changed watched files in the load hook', async () => {
@@ -1387,9 +1388,9 @@ describe('rollup.watch', () => {
 					exports: 'auto'
 				},
 				plugins: {
-					load() {
+					async load() {
 						this.addWatchFile(WATCHED_ID);
-						return `export default "${readFileSync(WATCHED_ID, 'utf8').trim()}"`;
+						return `export default "${(await promises.readFile(WATCHED_ID, 'utf8')).trim()}"`;
 					}
 				}
 			});
@@ -1398,9 +1399,9 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), 'initial');
-					writeFileSync(WATCHED_ID, 'next');
+					await promises.writeFile(WATCHED_ID, 'next');
 				},
 				'START',
 				'BUNDLE_START',
@@ -1434,14 +1435,16 @@ describe('rollup.watch', () => {
 							return `throw new Error('This should not be executed);`;
 						}
 					},
-					transform(code, id_2) {
+					async transform(code, id_2) {
 						if (id_2.endsWith('main.js')) {
 							return `export { value as default } from 'dep';`;
 						} else {
 							if (addWatchFile) {
 								this.addWatchFile(WATCHED_ID);
 							}
-							return `export const value = "${readFileSync(WATCHED_ID, 'utf8').trim()}"`;
+							return `export const value = "${(
+								await promises.readFile(WATCHED_ID, 'utf8')
+							).trim()}"`;
 						}
 					}
 				}
@@ -1453,20 +1456,21 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), 'initial');
 					addWatchFile = false;
-					writeFileSync(WATCHED_ID, 'next');
+					await promises.writeFile(WATCHED_ID, 'next');
 				},
 				'START',
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), 'next');
-					writeFileSync(WATCHED_ID, 'other');
+					await promises.writeFile(WATCHED_ID, 'other');
 					events.length = 0;
-					return wait(400).then(() => assert.deepStrictEqual(events, []));
+					await wait(400);
+					assert.deepStrictEqual(events, []);
 				}
 			]);
 		});
@@ -1481,10 +1485,10 @@ describe('rollup.watch', () => {
 					exports: 'auto'
 				},
 				plugins: {
-					transform(code, id) {
+					async transform(code, id) {
 						if (id.endsWith('dep1.js')) {
 							this.addWatchFile(resolve('test/_tmp/input/dep2.js'));
-							const text = readFileSync('test/_tmp/input/dep2.js', 'utf8').trim();
+							const text = (await promises.readFile('test/_tmp/input/dep2.js', 'utf8')).trim();
 							return `export default ${JSON.stringify(text)}`;
 						}
 					}
@@ -1495,12 +1499,12 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(
 						run('../_tmp/output/bundle.js'),
 						`dep1: "export default 'dep2';", dep2: "dep2"`
 					);
-					writeFileSync('test/_tmp/input/dep2.js', 'export default "next";');
+					await promises.writeFile('test/_tmp/input/dep2.js', 'export default "next";');
 				},
 				'START',
 				'BUNDLE_START',
@@ -1526,9 +1530,9 @@ describe('rollup.watch', () => {
 					exports: 'auto'
 				},
 				plugins: {
-					transform() {
+					async transform() {
 						this.addWatchFile('test/_tmp/input');
-						return `export default ${existsSync(WATCHED_ID)}`;
+						return `export default ${await pathExists(WATCHED_ID)}`;
 					}
 				}
 			});
@@ -1537,9 +1541,9 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), true);
-					unlinkSync(WATCHED_ID);
+					await promises.unlink(WATCHED_ID);
 				},
 				'START',
 				'BUNDLE_START',
@@ -1562,9 +1566,9 @@ describe('rollup.watch', () => {
 					exports: 'auto'
 				},
 				plugins: {
-					transform() {
+					async transform() {
 						this.addWatchFile('test/_tmp/input/dep');
-						return `export default ${existsSync('test/_tmp/input/dep')}`;
+						return `export default ${await pathExists('test/_tmp/input/dep')}`;
 					}
 				}
 			});
@@ -1573,9 +1577,9 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), false);
-					writeFileSync('test/_tmp/input/dep', '');
+					await promises.writeFile('test/_tmp/input/dep', '');
 				},
 				'START',
 				'BUNDLE_START',
@@ -1589,7 +1593,7 @@ describe('rollup.watch', () => {
 
 		it('respects unlinked and re-added watched files', async () => {
 			await copy('test/watch/samples/basic', 'test/_tmp/input');
-			writeFileSync('test/_tmp/input/dep', '');
+			await promises.writeFile('test/_tmp/input/dep', '');
 			watcher = rollup.watch({
 				input: 'test/_tmp/input/main.js',
 				output: {
@@ -1598,9 +1602,9 @@ describe('rollup.watch', () => {
 					exports: 'auto'
 				},
 				plugins: {
-					transform() {
+					async transform() {
 						this.addWatchFile('test/_tmp/input/dep');
-						return `export default ${existsSync('test/_tmp/input/dep')}`;
+						return `export default ${await pathExists('test/_tmp/input/dep')}`;
 					}
 				}
 			});
@@ -1609,17 +1613,17 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), true);
-					unlinkSync('test/_tmp/input/dep');
+					await promises.unlink('test/_tmp/input/dep');
 				},
 				'START',
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), false);
-					writeFileSync('test/_tmp/input/dep', '');
+					await promises.writeFile('test/_tmp/input/dep', '');
 				},
 				'START',
 				'BUNDLE_START',
@@ -1636,7 +1640,7 @@ describe('rollup.watch', () => {
 			let transformRuns = 0;
 			await copy('test/watch/samples/watch-files', 'test/_tmp/input');
 			await wait(100);
-			writeFileSync('test/_tmp/input/alsoWatched', 'initial');
+			await promises.writeFile('test/_tmp/input/alsoWatched', 'initial');
 			watcher = rollup.watch({
 				input: 'test/_tmp/input/main.js',
 				output: {
@@ -1648,10 +1652,10 @@ describe('rollup.watch', () => {
 					buildStart() {
 						this.addWatchFile('test/_tmp/input/alsoWatched');
 					},
-					transform() {
+					async transform() {
 						transformRuns++;
 						this.addWatchFile(WATCHED_ID);
-						return `export default "${readFileSync(WATCHED_ID, 'utf8').trim()}"`;
+						return `export default "${(await promises.readFile(WATCHED_ID, 'utf8')).trim()}"`;
 					}
 				}
 			});
@@ -1660,9 +1664,9 @@ describe('rollup.watch', () => {
 				'BUNDLE_START',
 				'BUNDLE_END',
 				'END',
-				() => {
+				async () => {
 					assert.strictEqual(transformRuns, 1);
-					writeFileSync('test/_tmp/input/alsoWatched', 'next');
+					await promises.writeFile('test/_tmp/input/alsoWatched', 'next');
 				},
 				'START',
 				'BUNDLE_START',
