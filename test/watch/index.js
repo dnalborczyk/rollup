@@ -1325,9 +1325,9 @@ describe('rollup.watch', () => {
 			const transformFile = resolve('test/_tmp/input/transform');
 			const watchFiles = [buildStartFile, loadFile, resolveIdFile, transformFile];
 			await copy('test/watch/samples/basic', 'test/_tmp/input');
-			for (const file of watchFiles) {
-				await promises.writeFile(file, 'initial');
-			}
+
+			await Promise.all(watchFiles.map(file => promises.writeFile(file, 'initial')));
+
 			watcher = rollup.watch({
 				input: 'test/_tmp/input/main.js',
 				output: {
@@ -1362,9 +1362,8 @@ describe('rollup.watch', () => {
 					assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
 					// sometimes the watcher is triggered during the initial run
 					watchChangeIds.clear();
-					for (const file_2 of watchFiles) {
-						await promises.writeFile(file_2, 'changed');
-					}
+
+					await Promise.all(watchFiles.map(file_2 => promises.writeFile(file_2, 'changed')));
 				},
 				'START',
 				'BUNDLE_START',
