@@ -1,4 +1,4 @@
-import * as path from 'path';
+import { resolve } from 'path';
 import { createFilter } from '@rollup/pluginutils';
 import { rollupInternal } from '../rollup/rollup';
 import {
@@ -140,7 +140,7 @@ export class Task {
 		this.options = mergeOptions(config);
 		this.outputs = this.options.output;
 		this.outputFiles = this.outputs.map(output => {
-			if (output.file || output.dir) return path.resolve(output.file || output.dir!);
+			if (output.file || output.dir) return resolve(output.file || output.dir!);
 			return undefined as never;
 		});
 

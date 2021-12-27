@@ -26,7 +26,7 @@ export async function watch(command: Record<string, any>): Promise<void> {
 	const configFile = command.config ? getConfigPath(command.config) : null;
 
 	onExit(close);
-	process.on('uncaughtException' as any, close);
+	process.on('uncaughtException', close);
 	if (!process.stdin.isTTY) {
 		process.stdin.on('end', close);
 		process.stdin.resume();

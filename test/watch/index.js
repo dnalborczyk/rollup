@@ -3,7 +3,6 @@ const { promises } = require('fs');
 const { resolve } = require('path');
 const process = require('process');
 const { copy, pathExists, remove } = require('fs-extra');
-const sander = require('sander');
 const rollup = require('../../dist/rollup');
 
 const cwd = process.cwd();
@@ -1087,10 +1086,10 @@ describe('rollup.watch', () => {
 		]);
 	});
 
-	it('runs transforms again on previously erroring files that were changed back', () => {
+	it('runs transforms again on previously erroring files that were changed back', async () => {
 		const brokenFiles = new Set();
 		const INITIAL_CONTENT = 'export default 42;';
-		sander.writeFileSync('test/_tmp/input/main.js', INITIAL_CONTENT);
+		await promises.writeFile('test/_tmp/input/main.js', INITIAL_CONTENT);
 		watcher = rollup.watch({
 			input: 'test/_tmp/input/main.js',
 			plugins: {
@@ -1119,15 +1118,15 @@ describe('rollup.watch', () => {
 			'BUNDLE_START',
 			'BUNDLE_END',
 			'END',
-			() => {
+			async () => {
 				assert.strictEqual(run('../_tmp/output/bundle.js'), 42);
-				sander.writeFileSync('test/_tmp/input/main.js', 'export default "broken";');
+				await promises.writeFile('test/_tmp/input/main.js', 'export default "broken";');
 			},
 			'START',
 			'BUNDLE_START',
 			'ERROR',
-			() => {
-				sander.writeFileSync('test/_tmp/input/main.js', INITIAL_CONTENT);
+			async () => {
+				await promises.writeFile('test/_tmp/input/main.js', INITIAL_CONTENT);
 			},
 			'START',
 			'BUNDLE_START',
